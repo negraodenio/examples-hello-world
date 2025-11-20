@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Simplified CSS variables to fix 'Invalid custom property' errors */
+:root {
+  /* Light Mode - Copilot Premium Theme */
+  --background: 100% 0 0;
+  --foreground: 14.5% 0 0;
+  --card: 98% 0.01 280;
+  --card-foreground: 14.5% 0 0;
+  --popover: 100% 0 0;
+  --popover-foreground: 14.5% 0 0;
+  --primary: 52% 0.15 240;
+  --primary-foreground: 98.5% 0 0;
+  --secondary: 60% 0.08 180;
+  --secondary-foreground: 98.5% 0 0;
+  --muted: 93% 0.01 0;
+  --muted-foreground: 55.6% 0 0;
+  --accent: 72% 0.15 150;
+  --accent-foreground: 14.5% 0 0;
+  --destructive: 57.7% 0.245 27.325;
+  --destructive-foreground: 98.5% 0 0;
+  --border: 92% 0.01 0;
+  --input: 96% 0.01 0;
+  --ring: 52% 0.15 240;
+  --chart-1: 52% 0.15 240;
+  --chart-2: 72% 0.12 150;
+  --chart-3: 60% 0.12 40;
+  --chart-4: 65% 0.14 280;
+  --chart-5: 55% 0.13 200;
+  --radius: 0.625rem;
+  --sidebar: 97% 0.01 0;
+  --sidebar-foreground: 14.5% 0 0;
+  --sidebar-primary: 52% 0.15 240;
+  --sidebar-primary-foreground: 98.5% 0 0;
+  --sidebar-accent: 93% 0.01 0;
+  --sidebar-accent-foreground: 52% 0.15 240;
+  --sidebar-border: 92% 0.01 0;
+  --sidebar-ring: 52% 0.15 240;
+}
+
+.dark {
+  /* Dark Mode - Premium Copilot Theme */
+  --background: 10% 0 0;
+  --foreground: 95% 0 0;
+  --card: 15% 0.01 280;
+  --card-foreground: 95% 0 0;
+  --popover: 12% 0 0;
+  --popover-foreground: 95% 0 0;
+  --primary: 65% 0.16 240;
+  --primary-foreground: 10% 0 0;
+  --secondary: 50% 0.08 180;
+  --secondary-foreground: 95% 0 0;
+  --muted: 25% 0.01 0;
+  --muted-foreground: 70% 0 0;
+  --accent: 80% 0.15 150;
+  --accent-foreground: 10% 0 0;
+  --destructive: 66% 0.23 25;
+  --destructive-foreground: 95% 0 0;
+  --border: 22% 0.01 0;
+  --input: 20% 0.01 0;
+  --ring: 65% 0.16 240;
+  --chart-1: 65% 0.16 240;
+  --chart-2: 80% 0.14 150;
+  --chart-3: 70% 0.13 40;
+  --chart-4: 72% 0.15 280;
+  --chart-5: 68% 0.14 200;
+  --sidebar: 12% 0 0;
+  --sidebar-foreground: 95% 0 0;
+  --sidebar-primary: 65% 0.16 240;
+  --sidebar-primary-foreground: 10% 0 0;
+  --sidebar-accent: 22% 0.01 0;
+  --sidebar-accent-foreground: 80% 0.15 150;
+  --sidebar-border: 22% 0.01 0;
+  --sidebar-ring: 65% 0.16 240;
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --color-background: oklch(var(--background));
+  --color-foreground: oklch(var(--foreground));
+  --color-card: oklch(var(--card));
+  --color-card-foreground: oklch(var(--card-foreground));
+  --color-popover: oklch(var(--popover));
+  --color-popover-foreground: oklch(var(--popover-foreground));
+  --color-primary: oklch(var(--primary));
+  --color-primary-foreground: oklch(var(--primary-foreground));
+  --color-secondary: oklch(var(--secondary));
+  --color-secondary-foreground: oklch(var(--secondary-foreground));
+  --color-muted: oklch(var(--muted));
+  --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-accent: oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-destructive: oklch(var(--destructive));
+  --color-destructive-foreground: oklch(var(--destructive-foreground));
+  --color-border: oklch(var(--border));
+  --color-input: oklch(var(--input));
+  --color-ring: oklch(var(--ring));
+  --color-chart-1: oklch(var(--chart-1));
+  --color-chart-2: oklch(var(--chart-2));
+  --color-chart-3: oklch(var(--chart-3));
+  --color-chart-4: oklch(var(--chart-4));
+  --color-chart-5: oklch(var(--chart-5));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: oklch(var(--sidebar));
+  --color-sidebar-foreground: oklch(var(--sidebar-foreground));
+  --color-sidebar-primary: oklch(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: oklch(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: oklch(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: oklch(var(--sidebar-accent-foreground));
+  --color-sidebar-border: oklch(var(--sidebar-border));
+  --color-sidebar-ring: oklch(var(--sidebar-ring));
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
