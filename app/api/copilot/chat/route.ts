@@ -112,12 +112,11 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 })
   }
 
-  // Save user message to database
-  if (messages.length > 0) {
+  if (messages.length > 0 && conversationId) {
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.role === "user") {
       await supabase.from("messages").insert({
-        conversation_id: conversationId || null,
+        conversation_id: conversationId,
         user_id: user.id,
         role: "user",
         content: lastMessage.content,
@@ -126,7 +125,7 @@ export async function POST(req: Request) {
   }
 
   const result = streamText({
-    model: "groq/mixtral-8x7b-32768",
+    model: "groq/llama-3.3-70b-versatile",
     system: `You are ContentMaster AI, an intelligent copilot for content optimization, business intelligence, and revenue insights. 
     
     You have access to three powerful tools:
