@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Edit3, Plus, Save, Check } from "lucide-react"
+import { Edit3, Plus, Save, Check, CheckCircle2, Circle } from "lucide-react"
 import { toast } from "sonner"
 
 interface JournalistStyle {
@@ -93,37 +93,43 @@ export function StyleEditor() {
       return
     }
 
-    if (!formData.trainingText1.trim() && !formData.trainingText2.trim() && !formData.trainingText3.trim()) {
-      toast.error("Please provide at least one training text example")
+    if (!formData.trainingText1.trim()) {
+      toast.error("Please provide at least the first training text example")
       return
     }
 
+    setLoading(true)
+
     try {
+      const payload = {
+        id: editingStyle?.id,
+        name: formData.name,
+        description: formData.description,
+        tone: formData.tone,
+        styleCharacteristics: {
+          vocabulary: "professional",
+          sentence_length: "medium",
+          use_examples: true,
+        },
+        trainingText1: formData.trainingText1,
+        trainingText2: formData.trainingText2,
+        trainingText3: formData.trainingText3,
+        isDefault: formData.isDefault,
+      }
+
       const response = await fetch("/api/styles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingStyle?.id,
-          name: formData.name,
-          description: formData.description,
-          tone: formData.tone,
-          styleCharacteristics: {
-            vocabulary: "professional",
-            sentence_length: "medium",
-            use_examples: true,
-          },
-          trainingText1: formData.trainingText1,
-          trainingText2: formData.trainingText2,
-          trainingText3: formData.trainingText3,
-          isDefault: formData.isDefault,
-        }),
+        body: JSON.stringify(payload),
       })
+
+      const responseData = await response.json()
 
       if (response.ok) {
         toast.success(`Style "${formData.name}" ${editingStyle ? "updated" : "created"} successfully!`)
         setIsCreating(false)
         setEditingStyle(null)
-        loadStyles()
+        await loadStyles()
         setFormData({
           name: "",
           description: "",
@@ -134,10 +140,13 @@ export function StyleEditor() {
           isDefault: false,
         })
       } else {
-        toast.error("Failed to save style")
+        toast.error(responseData.error || "Failed to save style")
       }
     } catch (error) {
+      console.error("Error saving style:", error)
       toast.error("Error saving style")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -165,6 +174,14 @@ export function StyleEditor() {
     { value: "investigative", label: "Investigative" },
     { value: "analytical", label: "Analytical" },
   ]
+
+  const getTrainingCompletion = (style: JournalistStyle) => {
+    let count = 0
+    if (style.training_text_1) count++
+    if (style.training_text_2) count++
+    if (style.training_text_3) count++
+    return { count, total: 3, percentage: (count / 3) * 100 }
+  }
 
   if (loading) {
     return <div className="text-center py-12">Loading styles...</div>
@@ -311,58 +328,84 @@ export function StyleEditor() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {styles.map((style) => (
-          <Card key={style.id} className="p-4 hover:shadow-md transition-shadow">
-            <div className="space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold">{style.name}</h3>
-                    {style.is_default && (
-                      <Badge variant="default" className="text-xs">
-                        <Check className="w-3 h-3 mr-1" />
-                        Default
-                      </Badge>
-                    )}
+        {styles.map((style) => {
+          const training = getTrainingCompletion(style)
+          const isFullyTrained = training.count === 3
+
+          return (
+            <Card key={style.id} className="p-4 hover:shadow-md transition-shadow relative">
+              {isFullyTrained && (
+                <div className="absolute -top-2 -right-2">
+                  <Badge className="bg-green-500 text-white gap-1 shadow-lg">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Treinado
+                  </Badge>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-semibold">{style.name}</h3>
+                      {style.is_default && (
+                        <Badge variant="default" className="text-xs">
+                          <Check className="w-3 h-3 mr-1" />
+                          Default
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{style.description}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">{style.description}</p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline">{style.tone}</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Used {style.usage_count} times
+                  </Badge>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Training Progress</span>
+                    <span className="font-medium">{training.count}/3 exemplos</span>
+                  </div>
+
+                  <div className="flex gap-1">
+                    <div className={`h-1.5 flex-1 rounded-full ${style.training_text_1 ? "bg-primary" : "bg-muted"}`} />
+                    <div className={`h-1.5 flex-1 rounded-full ${style.training_text_2 ? "bg-primary" : "bg-muted"}`} />
+                    <div className={`h-1.5 flex-1 rounded-full ${style.training_text_3 ? "bg-primary" : "bg-muted"}`} />
+                  </div>
+
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[1, 2, 3].map((num) => {
+                      const hasText =
+                        num === 1 ? style.training_text_1 : num === 2 ? style.training_text_2 : style.training_text_3
+                      return (
+                        <Badge
+                          key={num}
+                          variant={hasText ? "default" : "outline"}
+                          className={`text-xs gap-1 ${hasText ? "bg-primary/90" : "text-muted-foreground"}`}
+                        >
+                          {hasText ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                          Exemplo {num}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => handleEdit(style)} className="gap-1">
+                    <Edit3 className="w-3 h-3" />
+                    Edit
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline">{style.tone}</Badge>
-                <Badge variant="secondary" className="text-xs">
-                  Used {style.usage_count} times
-                </Badge>
-              </div>
-
-              <div className="flex gap-1">
-                {style.training_text_1 && (
-                  <Badge variant="secondary" className="text-xs">
-                    Example 1 ✓
-                  </Badge>
-                )}
-                {style.training_text_2 && (
-                  <Badge variant="secondary" className="text-xs">
-                    Example 2 ✓
-                  </Badge>
-                )}
-                {style.training_text_3 && (
-                  <Badge variant="secondary" className="text-xs">
-                    Example 3 ✓
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" variant="outline" onClick={() => handleEdit(style)} className="gap-1">
-                  <Edit3 className="w-3 h-3" />
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
 
       {styles.length === 0 && !isCreating && (
