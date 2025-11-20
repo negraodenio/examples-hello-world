@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { CopilotWidget } from "@/components/copilot-widget"
 import { ConversationSidebar } from "@/components/conversation-sidebar"
 import { AdvancedCopilotWidget } from "@/components/advanced-copilot-widget"
 
@@ -48,17 +47,14 @@ export default function CopilotPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-[calc(100vh-4rem)]">
       <ConversationSidebar
         onSelectConversation={setConversationId}
         activeConversationId={conversationId || undefined}
       />
       <div className="flex-1 relative">
         {conversationId ? (
-          <>
-            <CopilotWidget conversationId={conversationId} />
-            <AdvancedCopilotWidget conversationId={conversationId} context={context} />
-          </>
+          <AdvancedCopilotWidget conversationId={conversationId} context={context} />
         ) : (
           <div className="flex items-center justify-center h-full text-center p-6">
             <div className="max-w-2xl">
@@ -66,7 +62,7 @@ export default function CopilotPage() {
                 Welcome to ContentMaster AI
               </h2>
               <p className="text-muted-foreground mb-8 text-lg">
-                Your intelligent copilot for content creation, optimization, and monetization
+                Your intelligent copilot for journalism automation and content optimization
               </p>
               <div className="grid grid-cols-2 gap-4 text-left">
                 <div className="border rounded-lg p-4">
@@ -94,9 +90,9 @@ export default function CopilotPage() {
                 Press <kbd className="px-2 py-1 bg-muted rounded">⌘K</kbd> or create a conversation to get started
               </p>
             </div>
-            <AdvancedCopilotWidget context={context} />
           </div>
         )}
+        <AdvancedCopilotWidget context={context} />
       </div>
     </div>
   )

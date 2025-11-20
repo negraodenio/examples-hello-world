@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "functions": {
+    "app/api/ai/generate/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008,
+      "regions": ["gru1", "iad1", "lhr1"]
+    },
+    "app/api/news/hunt/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024,
+      "regions": ["gru1", "iad1", "lhr1", "nrt1", "syd1"]
+    },
+    "app/api/seo/articles/generate/route.ts": {
+      "maxDuration": 45,
+      "memory": 2048,
+      "regions": ["gru1", "iad1", "lhr1"]
+    },
+    "app/api/newspapers/generate/route.ts": {
+      "maxDuration": 60,
+      "memory": 2048,
+      "regions": ["gru1", "iad1", "lhr1"]
+    }
+  },
+
+  "regions": ["gru1", "iad1", "lhr1", "nrt1", "syd1", "fra1"],
+
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=300, stale-while-revalidate=3600"
+        }
+      ]
+    }
+  ],
+
+  "crons": [
+    {
+      "path": "/api/cron/reset-daily-limits",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/update-trending",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
