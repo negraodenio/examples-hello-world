@@ -1,27 +1,44 @@
-import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const category = searchParams.get("category") || "general"
 
-  // In a real production environment, this would connect to an external News API
-  // (e.g., NewsAPI.org, GNews, Bing News)
-  // For this demo, we'll return a structured response that the frontend expects
-  // You can integrate a real API key here later
-
   try {
-    // Check if we have cached news in our database
-    const supabase = createClient()
+    const apiKey = process.env.NEWSAPI_KEY
 
-    // This is where you would query your 'processed_news_items' table
-    // const { data } = await supabase.from('processed_news_items').select('*')...
+    if (!apiKey) {
+      return NextResponse.json({ error: "NewsAPI key not configured" }, { status: 500 })
+    }
+
+    const response = await fetch(
+      `https://newsapi.org/v2/top-headlines?category=${category}&language=en&pageSize=20&apiKey=${apiKey}`,
+    )
+
+    if (!response.ok) {
+      throw new Error("NewsAPI request failed")
+    }
+
+    const data = await response.json()
+
+    const articles = data.articles?.map((article: any) => ({
+      title: article.title,
+      description: article.description,
+      url: article.url,
+      source: article.source.name,
+      publishedAt: article.publishedAt,
+      urlToImage: article.urlToImage,
+      content: article.content,
+      category,
+    }))
 
     return NextResponse.json({
       status: "success",
-      articles: [], // The frontend will handle empty array by showing mock data
+      articles: articles || [],
+      totalResults: data.totalResults,
     })
   } catch (error) {
+    console.error("[v0] NewsAPI Error:", error)
     return NextResponse.json({ error: "Failed to fetch news" }, { status: 500 })
   }
 }

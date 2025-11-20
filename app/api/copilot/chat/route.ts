@@ -1,6 +1,7 @@
 import { streamText, tool } from "ai"
 import { createClient } from "@/lib/supabase/server"
 import { z } from "zod"
+import { selectModel } from "@/lib/ai-router"
 
 export const maxDuration = 30
 
@@ -97,7 +98,7 @@ const contentRewriterTool = tool({
 
 const journalistStyleRewriterTool = tool({
   description:
-    "Rewrite content using professional journalist styles from user's saved style library. Fetches actual journalist personas from database.",
+    "Rewrite content using professional journalist styles trained from user's writing examples. Analyzes 3 training texts to perfectly mimic the journalist's unique voice and style.",
   parameters: z.object({
     content: z.string().describe("Content to rewrite"),
     styleId: z.string().optional().describe("Specific journalist style ID from database"),
@@ -141,6 +142,28 @@ const journalistStyleRewriterTool = tool({
 
       const selectedStyle = styles[0]
 
+      let trainingExamples = ""
+      let trainingCount = 0
+
+      if (selectedStyle.training_text_1) {
+        trainingCount++
+        trainingExamples += `\n\nTRAINING EXAMPLE 1:\n${selectedStyle.training_text_1}`
+      }
+      if (selectedStyle.training_text_2) {
+        trainingCount++
+        trainingExamples += `\n\nTRAINING EXAMPLE 2:\n${selectedStyle.training_text_2}`
+      }
+      if (selectedStyle.training_text_3) {
+        trainingCount++
+        trainingExamples += `\n\nTRAINING EXAMPLE 3:\n${selectedStyle.training_text_3}`
+      }
+
+      // Fallback to old example_text if no training texts
+      if (trainingCount === 0 && selectedStyle.example_text) {
+        trainingExamples = `\n\nTRAINING EXAMPLE:\n${selectedStyle.example_text}`
+        trainingCount = 1
+      }
+
       // Increment usage count
       await supabase
         .from("journalist_styles")
@@ -152,21 +175,40 @@ const journalistStyleRewriterTool = tool({
           name: selectedStyle.name,
           description: selectedStyle.description,
           tone: selectedStyle.tone,
-          example: selectedStyle.example_text,
+          trainingTextsProvided: trainingCount,
         },
-        instruction: `Rewrite the following content in the style of "${selectedStyle.name}".
+        instruction: `You are an expert content rewriter. Your task is to rewrite content in the EXACT style of "${selectedStyle.name}".
 
-Style Guidelines:
+STYLE PROFILE:
+- Name: ${selectedStyle.name}
 - Description: ${selectedStyle.description}
 - Tone: ${selectedStyle.tone}
 - Characteristics: ${JSON.stringify(selectedStyle.style_characteristics)}
-- Example: "${selectedStyle.example_text}"
 ${targetAudience ? `- Target Audience: ${targetAudience}` : ""}
 
-Content to rewrite:
+TRAINING DATA (Analyze these ${trainingCount} examples carefully):${trainingExamples}
+
+INSTRUCTIONS:
+1. Carefully analyze the training examples above to understand:
+   - Sentence structure and length patterns
+   - Vocabulary choices and complexity level
+   - Tone and voice (formal vs casual, objective vs subjective)
+   - Use of punctuation and formatting
+   - Paragraph organization
+   - Opening and closing styles
+   - Use of examples, metaphors, or data
+   - Overall rhythm and flow
+
+2. Rewrite the content below to PERFECTLY match the style demonstrated in the training examples.
+
+3. Maintain all factual information and key points from the original content.
+
+4. The rewritten version should sound like it was written by the same person who wrote the training examples.
+
+CONTENT TO REWRITE:
 ${content}
 
-Apply the style naturally while maintaining factual accuracy and improving engagement.`,
+Now rewrite this content matching the journalist's style exactly as shown in the training examples.`,
         contentLength: content.split(/\s+/).length,
         targetAudience: targetAudience || "general audience",
       }
@@ -323,8 +365,10 @@ export async function POST(req: Request) {
       }
     }
 
+    const { provider: model } = selectModel("chat-simple")
+
     const result = streamText({
-      model: "groq/llama-3.3-70b-versatile",
+      model,
       system: `You are ContentMaster AI, an expert AI copilot for professional content creation and journalism automation.
 
 Your capabilities:

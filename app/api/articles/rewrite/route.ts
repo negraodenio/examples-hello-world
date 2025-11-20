@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { generateText } from "ai"
 import { NextResponse } from "next/server"
+import { selectModel } from "@/lib/ai-router"
 
 export const maxDuration = 60
 
@@ -24,14 +25,45 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Article or style not found" }, { status: 404 })
   }
 
-  const { text: rewrittenContent } = await generateText({
-    model: "groq/llama-3.3-70b-versatile",
-    prompt: `Rewrite this article in the style of a ${style.name}.
+  const { provider: model, name: modelName } = selectModel("journalist-style")
+  console.log(`[v0] Rewriting article with ${modelName} for style accuracy`)
 
-Style Description: ${style.description}
-Tone: ${style.tone}
-Style Characteristics: ${JSON.stringify(style.style_characteristics)}
-Example: ${style.example_text}
+  // Build training context from all 3 training texts
+  let trainingContext = ""
+  if (style.training_text_1) trainingContext += `\n\nTRAINING EXAMPLE 1:\n${style.training_text_1}`
+  if (style.training_text_2) trainingContext += `\n\nTRAINING EXAMPLE 2:\n${style.training_text_2}`
+  if (style.training_text_3) trainingContext += `\n\nTRAINING EXAMPLE 3:\n${style.training_text_3}`
+
+  // Fallback to old example_text if no training texts
+  if (!trainingContext && style.example_text) {
+    trainingContext = `\n\nTRAINING EXAMPLE:\n${style.example_text}`
+  }
+
+  const { text: rewrittenContent } = await generateText({
+    model,
+    prompt: `You are an expert content rewriter. Your task is to rewrite this article in the EXACT style of "${style.name}".
+
+STYLE PROFILE:
+- Name: ${style.name}
+- Description: ${style.description}
+- Tone: ${style.tone}
+- Characteristics: ${JSON.stringify(style.style_characteristics)}
+
+TRAINING DATA (Analyze these examples carefully):${trainingContext}
+
+INSTRUCTIONS:
+1. Carefully analyze the training examples to understand:
+   - Sentence structure and length patterns
+   - Vocabulary choices and complexity level
+   - Tone and voice (formal vs casual, objective vs subjective)
+   - Use of punctuation and formatting
+   - Paragraph organization
+   - Opening and closing styles
+   - Overall rhythm and flow
+
+2. Rewrite the content to PERFECTLY match the style demonstrated in the training examples.
+
+3. Maintain all factual information and key points.
 
 Target Audience: ${targetAudience || "general readers"}
 Tone Adjustment: ${toneAdjustment || "none"}
@@ -40,14 +72,7 @@ Original Article:
 Title: ${article.title}
 Content: ${article.original_content}
 
-Instructions:
-1. Maintain all factual information
-2. Apply the journalist style naturally
-3. Adjust tone as specified
-4. Keep the article engaging and professional
-5. Optimize for readability
-
-Rewritten Article:`,
+Now rewrite this article matching the journalist's style exactly as shown in the training examples.`,
     temperature: 0.7,
     maxTokens: 2000,
   })
@@ -96,6 +121,7 @@ Rewritten Article:`,
       wordCount,
       readingTime: `${readingTime} min`,
       improvementScore: 85,
+      modelUsed: modelName,
     },
   })
 }

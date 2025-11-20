@@ -7,7 +7,21 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, Globe, Zap, DollarSign, FileText, Search, Sparkles, BarChart3, Clock, Target } from "lucide-react"
+import {
+  TrendingUp,
+  Globe,
+  Zap,
+  DollarSign,
+  FileText,
+  Search,
+  Sparkles,
+  BarChart3,
+  Clock,
+  Target,
+  MessageSquare,
+  Users,
+  ThumbsUpIcon,
+} from "lucide-react"
 
 interface DashboardData {
   revenue: {
@@ -35,6 +49,12 @@ interface DashboardData {
     published: number
     drafts: number
   }
+  copilot: {
+    activeUsers: number
+    dailyInteractions: number
+    satisfactionRate: number
+    conversionRate: number
+  }
   credits: {
     balance: number
     usedToday: number
@@ -43,8 +63,17 @@ interface DashboardData {
 }
 
 export default function ExecutiveDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<DashboardData | null>({
+    revenue: { total: 12500, thisMonth: 4200, projected: 5500, growth: "+12%" },
+    reach: { totalViews: 450000, uniqueReaders: 120000, countries: 15 },
+    efficiency: { score: 92, hoursSaved: 145, costPerArticle: "$0.25" },
+    performance: { roi: "450", viralAccuracy: 85 },
+    articles: { total: 124, published: 89, drafts: 35 },
+    copilot: { activeUsers: 542, dailyInteractions: 1540, satisfactionRate: 88, conversionRate: 42 },
+    credits: { balance: 2500, usedToday: 150 },
+    plan: "Pro",
+  })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -196,10 +225,11 @@ export default function ExecutiveDashboard() {
             </h2>
 
             <Tabs defaultValue="generate" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="generate">Generate Article</TabsTrigger>
                 <TabsTrigger value="hunt">Hunt & Rewrite News</TabsTrigger>
                 <TabsTrigger value="bulk">Bulk Creation</TabsTrigger>
+                <TabsTrigger value="copilot-stats">Copilot Stats</TabsTrigger>
                 <TabsTrigger value="api">API Integration</TabsTrigger>
               </TabsList>
 
@@ -274,6 +304,118 @@ export default function ExecutiveDashboard() {
                   <h3 className="text-xl font-semibold mb-2">Bulk Content Creation</h3>
                   <p className="text-muted-foreground mb-4">Generate hundreds of articles at once</p>
                   <Button>Start Bulk Generation</Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="copilot-stats">
+                <div className="grid md:grid-cols-4 gap-4 mb-6">
+                  <Card className="p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Active Users</span>
+                      <Users className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold">{data?.copilot.activeUsers}</div>
+                    <div className="text-xs text-green-600 flex items-center mt-1">
+                      <TrendingUp className="w-3 h-3 mr-1" /> +15% this week
+                    </div>
+                  </Card>
+                  <Card className="p-4 bg-purple-50 dark:bg-purple-950/20 border-purple-100 dark:border-purple-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Daily Interactions</span>
+                      <MessageSquare className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-bold">{data?.copilot.dailyInteractions}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Avg 12 per user</div>
+                  </Card>
+                  <Card className="p-4 bg-green-50 dark:bg-green-950/20 border-green-100 dark:border-green-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Satisfaction</span>
+                      <ThumbsUpIcon className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold">{data?.copilot.satisfactionRate}%</div>
+                    <div className="text-xs text-green-600 mt-1">Top 5% in industry</div>
+                  </Card>
+                  <Card className="p-4 bg-orange-50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-muted-foreground">Free → Paid</span>
+                      <Target className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="text-2xl font-bold">{data?.copilot.conversionRate}%</div>
+                    <div className="text-xs text-muted-foreground mt-1">Exceeds target (40%)</div>
+                  </Card>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="p-6">
+                    <h3 className="font-semibold mb-4">Top Copilot Actions</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="text-sm">Article Generation</span>
+                        </div>
+                        <span className="text-sm font-medium">45%</span>
+                      </div>
+                      <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                        <div className="bg-blue-500 h-full w-[45%]" />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <span className="text-sm">Content Rewriting</span>
+                        </div>
+                        <span className="text-sm font-medium">30%</span>
+                      </div>
+                      <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                        <div className="bg-purple-500 h-full w-[30%]" />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-sm">SEO Optimization</span>
+                        </div>
+                        <span className="text-sm font-medium">15%</span>
+                      </div>
+                      <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                        <div className="bg-green-500 h-full w-[15%]" />
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <h3 className="font-semibold mb-4">Agent Performance</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                            AI
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">Ana Investigativa</div>
+                            <div className="text-xs text-muted-foreground">98% accuracy</div>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                          Top Rated
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">
+                            CG
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">Carlos Tech Guru</div>
+                            <div className="text-xs text-muted-foreground">95% accuracy</div>
+                          </div>
+                        </div>
+                        <Badge variant="outline">Most Used</Badge>
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               </TabsContent>
 

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, FolderOpen, Settings, Zap, FileText, BarChart } from "lucide-react"
+import { Plus, FolderOpen, Settings, Zap, FileText, BarChart, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 export default function SEODashboard() {
@@ -292,19 +292,259 @@ function ProjectForm({ onSubmit }: { onSubmit: (data: any) => void }) {
 }
 
 function ArticlesPanel({ projectId }: { projectId: string | null }) {
+  const [articles, setArticles] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+
+  useEffect(() => {
+    if (projectId) {
+      loadArticles()
+    }
+  }, [projectId])
+
+  const loadArticles = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/seo/projects/${projectId}/articles`)
+      if (response.ok) {
+        const data = await response.json()
+        setArticles(data.articles || [])
+      }
+    } catch (error) {
+      console.error("Failed to load articles", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerate = async (formData: any) => {
+    setIsGenerating(true)
+    try {
+      const response = await fetch("/api/seo/articles/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          ...formData,
+        }),
+      })
+
+      if (response.ok) {
+        toast.success("Article generated successfully!")
+        setShowGenerateDialog(false)
+        loadArticles()
+      } else {
+        toast.error("Failed to generate article")
+      }
+    } catch (error) {
+      toast.error("Error generating article")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  if (!projectId) return <div>Please select a project</div>
+
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">SEO Articles</h3>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Generate Article
-        </Button>
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">SEO Articles</h3>
+            <p className="text-muted-foreground text-sm">
+              Generate professional, ready-to-publish articles optimized for Google.
+            </p>
+          </div>
+          <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Generate Article
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Generate SEO Article</DialogTitle>
+              </DialogHeader>
+              <GenerateArticleForm onSubmit={handleGenerate} isGenerating={isGenerating} />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8">Loading articles...</div>
+        ) : articles.length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed rounded-lg">
+            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+            <h4 className="text-lg font-medium mb-1">No articles yet</h4>
+            <p className="text-muted-foreground mb-4">Generate your first SEO-optimized article to get started.</p>
+            <Button variant="outline" onClick={() => setShowGenerateDialog(true)}>
+              Generate Article
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {articles.map((article) => (
+              <div
+                key={article.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+              >
+                <div>
+                  <h4 className="font-medium">{article.title}</h4>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                    <span>{article.target_keyword}</span>
+                    <span>•</span>
+                    <span>{article.word_count} words</span>
+                    <span>•</span>
+                    <span className="capitalize">{article.status}</span>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">
+                  View
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+function GenerateArticleForm({ onSubmit, isGenerating }: { onSubmit: (data: any) => void; isGenerating: boolean }) {
+  const [formData, setFormData] = useState({
+    targetKeyword: "",
+    wordCount: 1500,
+    includeImages: true,
+    includeFaq: true,
+    includeToc: true,
+    language: "en",
+    tone: "professional",
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="keyword">Target Keyword *</Label>
+        <Input
+          id="keyword"
+          value={formData.targetKeyword}
+          onChange={(e) => setFormData({ ...formData, targetKeyword: e.target.value })}
+          placeholder="e.g., how to start a blog, best seo tools 2024"
+          required
+        />
       </div>
-      <p className="text-muted-foreground">
-        Generate SEO-optimized articles in 30 seconds with E-E-A-T principles, automatic formatting, images, and links.
-      </p>
-    </Card>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="wordCount">Word Count</Label>
+          <Select
+            value={formData.wordCount.toString()}
+            onValueChange={(value) => setFormData({ ...formData, wordCount: Number.parseInt(value) })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1000">Short (1000 words)</SelectItem>
+              <SelectItem value="1500">Standard (1500 words)</SelectItem>
+              <SelectItem value="2500">Long Form (2500+ words)</SelectItem>
+              <SelectItem value="4000">Pillar Page (4000+ words)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="language">Language</Label>
+          <Select value={formData.language} onValueChange={(value) => setFormData({ ...formData, language: value })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="pt">Portuguese</SelectItem>
+              <SelectItem value="es">Spanish</SelectItem>
+              <SelectItem value="fr">French</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="tone">Tone of Voice</Label>
+        <Select value={formData.tone} onValueChange={(value) => setFormData({ ...formData, tone: value })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="professional">Professional & Authoritative</SelectItem>
+            <SelectItem value="casual">Casual & Friendly</SelectItem>
+            <SelectItem value="conversational">Conversational</SelectItem>
+            <SelectItem value="journalistic">Journalistic</SelectItem>
+            <SelectItem value="academic">Academic</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3 pt-2">
+        <Label>Content Elements</Label>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="images"
+            className="rounded border-gray-300"
+            checked={formData.includeImages}
+            onChange={(e) => setFormData({ ...formData, includeImages: e.target.checked })}
+          />
+          <Label htmlFor="images" className="font-normal">
+            Suggest AI Image Placements
+          </Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="faq"
+            className="rounded border-gray-300"
+            checked={formData.includeFaq}
+            onChange={(e) => setFormData({ ...formData, includeFaq: e.target.checked })}
+          />
+          <Label htmlFor="faq" className="font-normal">
+            Include FAQ Section (Schema optimized)
+          </Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="toc"
+            className="rounded border-gray-300"
+            checked={formData.includeToc}
+            onChange={(e) => setFormData({ ...formData, includeToc: e.target.checked })}
+          />
+          <Label htmlFor="toc" className="font-normal">
+            Include Table of Contents
+          </Label>
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isGenerating}>
+        {isGenerating ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Generating Optimized Content...
+          </>
+        ) : (
+          <>
+            <Zap className="w-4 h-4 mr-2" />
+            Generate Article
+          </>
+        )}
+      </Button>
+    </form>
   )
 }
 

@@ -18,6 +18,8 @@ import {
   Target,
   Edit3,
   Sparkles,
+  Lightbulb,
+  ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -54,6 +56,44 @@ const QUICK_ACTIONS = [
     color: "text-orange-600",
   },
 ]
+
+const DailyBriefing = ({ onAction }: { onAction: (prompt: string) => void }) => (
+  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-xl p-4 mb-4 border border-indigo-100 dark:border-indigo-900">
+    <div className="flex items-center gap-2 mb-3">
+      <Lightbulb className="w-4 h-4 text-amber-500" />
+      <h4 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Daily Proactive Briefing</h4>
+    </div>
+    <div className="space-y-3">
+      <div
+        onClick={() => onAction("Find trending AI news for my tech blog")}
+        className="flex items-start gap-3 p-2 bg-white/60 dark:bg-white/5 rounded-lg cursor-pointer hover:bg-white/80 transition-colors group"
+      >
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+        <div>
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-200 group-hover:text-blue-600 transition-colors">
+            3 new viral AI stories detected
+          </p>
+          <p className="text-[10px] text-slate-500">Perfect for your "Tech Guru" style</p>
+        </div>
+        <ArrowRight className="w-3 h-3 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
+      </div>
+
+      <div
+        onClick={() => onAction("Analyze my recent articles for SEO improvements")}
+        className="flex items-start gap-3 p-2 bg-white/60 dark:bg-white/5 rounded-lg cursor-pointer hover:bg-white/80 transition-colors group"
+      >
+        <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
+        <div>
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-200 group-hover:text-green-600 transition-colors">
+            SEO Opportunity: "AI Agents"
+          </p>
+          <p className="text-[10px] text-slate-500">Volume up 200% this week</p>
+        </div>
+        <ArrowRight className="w-3 h-3 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
+      </div>
+    </div>
+  </div>
+)
 
 interface AdvancedCopilotWidgetProps {
   conversationId?: string
@@ -159,9 +199,27 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
     toast.success("Copied to clipboard!")
   }
 
-  const provideFeedback = (messageId: string, isPositive: boolean) => {
-    toast.success(`Thank you for your ${isPositive ? "positive" : ""} feedback!`)
-    console.log(`[v0] Feedback for ${messageId}: ${isPositive ? "positive" : "negative"}`)
+  const provideFeedback = async (messageId: string, isPositive: boolean) => {
+    try {
+      const response = await fetch("/api/copilot/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId,
+          isPositive,
+          context: {
+            niche: context.niche,
+            // We could infer style from the last tool used if available
+          },
+        }),
+      })
+
+      if (response.ok) {
+        toast.success(isPositive ? "Thanks! I've learned from this." : "Thanks! I'll improve next time.")
+      }
+    } catch (err) {
+      console.error("Failed to send feedback", err)
+    }
   }
 
   return (
@@ -215,9 +273,23 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
               {/* Messages area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground text-sm whitespace-pre-line">
-                    {generateWelcomeMessage(context)}
-                  </div>
+                  <>
+                    <div className="text-center py-4 text-muted-foreground text-sm whitespace-pre-line">
+                      {generateWelcomeMessage(context)}
+                    </div>
+                    <DailyBriefing
+                      onAction={(prompt) => {
+                        setInput(prompt)
+                        setShowQuickActions(false)
+                        setTimeout(() => {
+                          const form = inputRef.current?.form
+                          if (form) {
+                            form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+                          }
+                        }, 100)
+                      }}
+                    />
+                  </>
                 )}
 
                 {messages.map((message, index) => (

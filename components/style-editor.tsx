@@ -18,6 +18,9 @@ interface JournalistStyle {
   tone: string
   style_characteristics: any
   example_text: string
+  training_text_1?: string
+  training_text_2?: string
+  training_text_3?: string
   is_default: boolean
   usage_count: number
 }
@@ -32,7 +35,9 @@ export function StyleEditor() {
     name: "",
     description: "",
     tone: "conversational",
-    exampleText: "",
+    trainingText1: "",
+    trainingText2: "",
+    trainingText3: "",
     isDefault: false,
   })
 
@@ -61,7 +66,9 @@ export function StyleEditor() {
       name: "",
       description: "",
       tone: "conversational",
-      exampleText: "",
+      trainingText1: "",
+      trainingText2: "",
+      trainingText3: "",
       isDefault: false,
     })
   }
@@ -73,7 +80,9 @@ export function StyleEditor() {
       name: style.name,
       description: style.description,
       tone: style.tone,
-      exampleText: style.example_text,
+      trainingText1: style.training_text_1 || "",
+      trainingText2: style.training_text_2 || "",
+      trainingText3: style.training_text_3 || "",
       isDefault: style.is_default,
     })
   }
@@ -84,11 +93,17 @@ export function StyleEditor() {
       return
     }
 
+    if (!formData.trainingText1.trim() && !formData.trainingText2.trim() && !formData.trainingText3.trim()) {
+      toast.error("Please provide at least one training text example")
+      return
+    }
+
     try {
       const response = await fetch("/api/styles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: editingStyle?.id,
           name: formData.name,
           description: formData.description,
           tone: formData.tone,
@@ -97,13 +112,15 @@ export function StyleEditor() {
             sentence_length: "medium",
             use_examples: true,
           },
-          exampleText: formData.exampleText,
+          trainingText1: formData.trainingText1,
+          trainingText2: formData.trainingText2,
+          trainingText3: formData.trainingText3,
           isDefault: formData.isDefault,
         }),
       })
 
       if (response.ok) {
-        toast.success(`Style "${formData.name}" created successfully!`)
+        toast.success(`Style "${formData.name}" ${editingStyle ? "updated" : "created"} successfully!`)
         setIsCreating(false)
         setEditingStyle(null)
         loadStyles()
@@ -111,7 +128,9 @@ export function StyleEditor() {
           name: "",
           description: "",
           tone: "conversational",
-          exampleText: "",
+          trainingText1: "",
+          trainingText2: "",
+          trainingText3: "",
           isDefault: false,
         })
       } else {
@@ -129,7 +148,9 @@ export function StyleEditor() {
       name: "",
       description: "",
       tone: "conversational",
-      exampleText: "",
+      trainingText1: "",
+      trainingText2: "",
+      trainingText3: "",
       isDefault: false,
     })
   }
@@ -154,7 +175,7 @@ export function StyleEditor() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Journalist Writing Styles</h2>
-          <p className="text-muted-foreground">Manage your custom journalist personas and writing styles</p>
+          <p className="text-muted-foreground">Train custom writing styles with 3 text examples</p>
         </div>
         <Button onClick={handleCreateNew} className="gap-2">
           <Plus className="w-4 h-4" />
@@ -205,15 +226,64 @@ export function StyleEditor() {
               </select>
             </div>
 
-            <div>
-              <Label htmlFor="example">Example Text</Label>
-              <Textarea
-                id="example"
-                placeholder="Provide an example of this writing style..."
-                value={formData.exampleText}
-                onChange={(e) => setFormData({ ...formData, exampleText: e.target.value })}
-                rows={3}
-              />
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="default">Training Examples</Badge>
+                <p className="text-sm text-muted-foreground">
+                  Cole 3 textos escritos pelo jornalista para a IA aprender o estilo
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="training1" className="flex items-center gap-2">
+                  Texto de Exemplo 1 *
+                  <Badge variant="outline" className="text-xs">
+                    Required
+                  </Badge>
+                </Label>
+                <Textarea
+                  id="training1"
+                  placeholder="Cole o primeiro texto de exemplo do jornalista aqui..."
+                  value={formData.trainingText1}
+                  onChange={(e) => setFormData({ ...formData, trainingText1: e.target.value })}
+                  rows={4}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="training2" className="flex items-center gap-2">
+                  Texto de Exemplo 2
+                  <Badge variant="secondary" className="text-xs">
+                    Optional
+                  </Badge>
+                </Label>
+                <Textarea
+                  id="training2"
+                  placeholder="Cole o segundo texto de exemplo do jornalista aqui..."
+                  value={formData.trainingText2}
+                  onChange={(e) => setFormData({ ...formData, trainingText2: e.target.value })}
+                  rows={4}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="training3" className="flex items-center gap-2">
+                  Texto de Exemplo 3
+                  <Badge variant="secondary" className="text-xs">
+                    Optional
+                  </Badge>
+                </Label>
+                <Textarea
+                  id="training3"
+                  placeholder="Cole o terceiro texto de exemplo do jornalista aqui..."
+                  value={formData.trainingText3}
+                  onChange={(e) => setFormData({ ...formData, trainingText3: e.target.value })}
+                  rows={4}
+                  className="font-mono text-sm"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
@@ -266,11 +336,23 @@ export function StyleEditor() {
                 </Badge>
               </div>
 
-              {style.example_text && (
-                <div className="bg-muted p-2 rounded text-xs italic border-l-2 border-primary">
-                  "{style.example_text.slice(0, 100)}..."
-                </div>
-              )}
+              <div className="flex gap-1">
+                {style.training_text_1 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Example 1 ✓
+                  </Badge>
+                )}
+                {style.training_text_2 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Example 2 ✓
+                  </Badge>
+                )}
+                {style.training_text_3 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Example 3 ✓
+                  </Badge>
+                )}
+              </div>
 
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={() => handleEdit(style)} className="gap-1">

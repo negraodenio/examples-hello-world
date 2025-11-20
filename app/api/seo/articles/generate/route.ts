@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { generateText } from "ai"
+import { selectModel } from "@/lib/ai-router"
 
 export async function POST(request: Request) {
   const supabase = await createServerClient()
@@ -29,9 +30,12 @@ export async function POST(request: Request) {
   // Build context from knowledge base
   const knowledgeContext = project.project_knowledge_base.map((kb: any) => `${kb.title}: ${kb.content}`).join("\n\n")
 
+  const { provider: model, name: modelName } = selectModel("seo-article")
+  console.log(`[v0] Generating SEO article with ${modelName}`)
+
   // Generate article with AI
   const { text } = await generateText({
-    model: "groq/llama-3.3-70b-versatile",
+    model,
     prompt: `You are an expert SEO content writer. Generate a complete, SEO-optimized article in ${language} language.
 
 TARGET KEYWORD: ${targetKeyword}

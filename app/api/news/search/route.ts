@@ -15,70 +15,93 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const searchQuery = `${keywords.join(" ")} ${niche || ""} latest news ${new Date().getFullYear()}`
+  const apiKey = process.env.NEWSAPI_KEY
+
+  if (!apiKey) {
+    return NextResponse.json({ error: "NewsAPI key not configured" }, { status: 500 })
+  }
+
+  const searchQuery = `${keywords.join(" OR ")} ${niche || ""}`
 
   console.log("[v0] Searching real news:", searchQuery)
 
-  // Mock results for now - in production, integrate with NewsAPI or similar
-  const articles = keywords.flatMap((keyword, idx) => [
-    {
-      title: `Breaking: ${keyword} Innovation Reshapes ${niche || "Industry"} - ${new Date().toLocaleDateString()}`,
-      summary: `Latest developments in ${keyword} show unprecedented growth potential. Industry experts predict major shifts in the coming months with significant implications for ${niche || "the market"}.`,
-      content: `Full article content about ${keyword} and its impact on ${niche || "the industry"}. This breakthrough represents a significant milestone...`,
-      source: idx % 3 === 0 ? "TechCrunch" : idx % 3 === 1 ? "Forbes" : "Reuters",
-      url: `https://example.com/news/${keyword.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
-      publishedAt: new Date(Date.now() - idx * 3600000).toISOString(),
-      viralScore: Math.random() * 40 + 60,
-      revenueScore: Math.random() * 30 + 70,
-      trendingPotential: Math.random() * 5 + 5,
-      estimatedReach: Math.floor(Math.random() * 500000 + 100000),
-      keywords: [keyword, niche || "general"].filter(Boolean),
-    },
-  ])
+  try {
+    const response = await fetch(
+      `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchQuery)}&language=en&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}&apiKey=${apiKey}`,
+    )
 
-  const topArticles = articles.slice(0, Math.min(limit, 20))
+    if (!response.ok) {
+      throw new Error("NewsAPI request failed")
+    }
 
-  const userProfile = await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).single()
+    const data = await response.json()
 
-  if (userProfile.data) {
-    const articlesToInsert = topArticles.map((article) => ({
-      user_id: userProfile.data.id,
-      title: article.title,
-      original_content: article.content,
-      source_url: article.url,
-      source_name: article.source,
-      published_at: article.publishedAt,
-      keywords: article.keywords,
-      niche: niche || "general",
-      viral_score: article.viralScore,
-      revenue_score: article.revenueScore,
-      trending_potential: article.trendingPotential,
-      estimated_reach: article.estimatedReach,
-      status: "discovered",
-    }))
+    const articles =
+      data.articles?.map((article: any) => ({
+        title: article.title,
+        summary: article.description || article.content?.substring(0, 200),
+        content: article.content || article.description,
+        source: article.source.name,
+        url: article.url,
+        publishedAt: article.publishedAt,
+        urlToImage: article.urlToImage,
+        viralScore: Math.random() * 40 + 60,
+        revenueScore: Math.random() * 30 + 70,
+        trendingPotential: Math.random() * 5 + 5,
+        estimatedReach: Math.floor(Math.random() * 500000 + 100000),
+        keywords: keywords,
+      })) || []
 
-    await supabase.from("news_articles").insert(articlesToInsert)
+    const topArticles = articles.slice(0, Math.min(limit, 20))
+
+    const userProfile = await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).single()
+
+    if (userProfile.data && topArticles.length > 0) {
+      const articlesToInsert = topArticles.map((article) => ({
+        user_id: userProfile.data.id,
+        title: article.title,
+        original_content: article.content,
+        source_url: article.url,
+        source_name: article.source,
+        published_at: article.publishedAt,
+        keywords: article.keywords,
+        niche: niche || "general",
+        viral_score: article.viralScore,
+        revenue_score: article.revenueScore,
+        trending_potential: article.trendingPotential,
+        estimated_reach: article.estimatedReach,
+        status: "discovered",
+      }))
+
+      await supabase.from("news_articles").insert(articlesToInsert)
+    }
+
+    return NextResponse.json({
+      success: true,
+      totalFound: topArticles.length,
+      articles: topArticles,
+      topRecommendations: topArticles
+        .filter((a) => a.viralScore > 75)
+        .slice(0, 3)
+        .map((a) => ({
+          title: a.title,
+          url: a.url,
+          viralScore: a.viralScore.toFixed(1),
+          revenueScore: a.revenueScore.toFixed(1),
+          estimatedReach: `${(a.estimatedReach / 1000).toFixed(0)}K`,
+        })),
+      searchMetadata: {
+        keywords,
+        niche,
+        searchedAt: new Date().toISOString(),
+        averageViralScore:
+          topArticles.length > 0
+            ? (topArticles.reduce((sum, a) => sum + a.viralScore, 0) / topArticles.length).toFixed(1)
+            : "0",
+      },
+    })
+  } catch (error) {
+    console.error("[v0] NewsAPI Error:", error)
+    return NextResponse.json({ error: "Failed to fetch news from NewsAPI" }, { status: 500 })
   }
-
-  return NextResponse.json({
-    success: true,
-    totalFound: topArticles.length,
-    articles: topArticles,
-    topRecommendations: topArticles
-      .filter((a) => a.viralScore > 75)
-      .slice(0, 3)
-      .map((a) => ({
-        title: a.title,
-        url: a.url,
-        viralScore: a.viralScore.toFixed(1),
-        revenueScore: a.revenueScore.toFixed(1),
-        estimatedReach: `${(a.estimatedReach / 1000).toFixed(0)}K`,
-      })),
-    searchMetadata: {
-      keywords,
-      niche,
-      searchedAt: new Date().toISOString(),
-      averageViralScore: (topArticles.reduce((sum, a) => sum + a.viralScore, 0) / topArticles.length).toFixed(1),
-    },
-  })
 }

@@ -47,12 +47,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User profile not found" }, { status: 404 })
   }
 
-  const { name, description, tone, styleCharacteristics, exampleText, isDefault } = await req.json()
+  const { id, name, description, tone, styleCharacteristics, trainingText1, trainingText2, trainingText3, isDefault } =
+    await req.json()
 
   if (isDefault) {
     await supabase.from("journalist_styles").update({ is_default: false }).eq("user_id", userProfile.data.id)
   }
 
+  // If ID exists, update existing style
+  if (id) {
+    const { data: updatedStyle, error } = await supabase
+      .from("journalist_styles")
+      .update({
+        name,
+        description,
+        tone,
+        style_characteristics: styleCharacteristics,
+        training_text_1: trainingText1 || null,
+        training_text_2: trainingText2 || null,
+        training_text_3: trainingText3 || null,
+        is_default: isDefault || false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", userProfile.data.id)
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ style: updatedStyle })
+  }
+
+  // Create new style with 3 training texts
   const { data: newStyle, error } = await supabase
     .from("journalist_styles")
     .insert({
@@ -61,7 +90,9 @@ export async function POST(req: Request) {
       description,
       tone,
       style_characteristics: styleCharacteristics,
-      example_text: exampleText,
+      training_text_1: trainingText1 || null,
+      training_text_2: trainingText2 || null,
+      training_text_3: trainingText3 || null,
       is_default: isDefault || false,
     })
     .select()

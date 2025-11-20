@@ -512,6 +512,23 @@ export async function POST(req: Request) {
 - Credits: ${userProfile.data!.credits_balance}
 - Total Revenue Generated: $${userProfile.data!.total_revenue_generated}
 
+🧠 LEARNED PREFERENCES
+${
+  userProfile.data!.copilot_preferences?.favorite_niches
+    ? `- Favorite Niches: ${userProfile.data!.copilot_preferences.favorite_niches.join(", ")}`
+    : ""
+}
+${
+  userProfile.data!.copilot_preferences?.preferred_style
+    ? `- Preferred Style: ${userProfile.data!.copilot_preferences.preferred_style}`
+    : ""
+}
+${
+  userProfile.data!.copilot_preferences?.avoid_styles
+    ? `- Styles to Avoid: ${userProfile.data!.copilot_preferences.avoid_styles.join(", ")}`
+    : ""
+}
+
 ${context.niche ? `- Working Niche: ${context.niche}` : ""}
 ${context.targetAudience ? `- Target Audience: ${context.targetAudience}` : ""}
 ${context.articleId ? `- Currently editing an article` : ""}

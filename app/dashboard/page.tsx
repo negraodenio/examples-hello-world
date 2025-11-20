@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, FileText, Zap, BarChart3, Edit3 } from "lucide-react"
+import { Sparkles, FileText, Zap, BarChart3, Edit3, Share2 } from "lucide-react"
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
@@ -132,6 +132,15 @@ export default function DashboardPage() {
           <p className="text-sm text-muted-foreground mb-4">Track performance, revenue, and engagement metrics</p>
           <Button variant="outline" onClick={() => (window.location.href = "/dashboard/executive")}>
             View Analytics
+          </Button>
+        </Card>
+
+        <Card className="p-6">
+          <Share2 className="w-8 h-8 text-pink-500 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Integrations</h3>
+          <p className="text-sm text-muted-foreground mb-4">Connect social media & CMS platforms</p>
+          <Button variant="outline" onClick={() => (window.location.href = "/dashboard/integrations")}>
+            Manage Integrations
           </Button>
         </Card>
       </div>
