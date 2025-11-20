@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Newspaper, Sparkles, CheckCircle2, Download, Eye } from "lucide-react"
 import { useChat } from "@ai-sdk/react"
 
+export const dynamic = "force-dynamic"
+
 export default function NewspaperGeneratorPage() {
   const [generating, setGenerating] = useState(false)
   const [generatedNewspaper, setGeneratedNewspaper] = useState<any>(null)
@@ -151,7 +153,7 @@ export default function NewspaperGeneratorPage() {
                   className="flex-1"
                   disabled={isLoading}
                 />
-                <Button type="submit" disabled={isLoading || !input.trim()}>
+                <Button type="submit" disabled={isLoading || !input || !input.trim()}>
                   <Sparkles className="w-4 h-4 mr-2" />
                   {isLoading ? "Processing..." : "Send"}
                 </Button>
