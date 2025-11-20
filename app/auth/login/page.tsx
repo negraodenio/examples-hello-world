@@ -30,7 +30,8 @@ export default function LoginPage() {
         password,
       })
       if (error) throw error
-      router.push("/copilot")
+      router.push("/dashboard")
+      router.refresh()
     } catch (error: unknown) {
       console.error("Login error:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
