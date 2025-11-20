@@ -3,8 +3,7 @@
   "functions": {
     "app/api/ai/generate/route.ts": {
       "maxDuration": 60,
-      "memory": 3008,
-      "regions": ["gru1", "iad1", "lhr1"]
+      "memory": 3008
     },
     "app/api/news/hunt/route.ts": {
       "maxDuration": 30,
@@ -13,13 +12,11 @@
     },
     "app/api/seo/articles/generate/route.ts": {
       "maxDuration": 45,
-      "memory": 2048,
-      "regions": ["gru1", "iad1", "lhr1"]
+      "memory": 2048
     },
     "app/api/newspapers/generate/route.ts": {
       "maxDuration": 60,
-      "memory": 2048,
-      "regions": ["gru1", "iad1", "lhr1"]
+      "memory": 2048
     }
   },
 
