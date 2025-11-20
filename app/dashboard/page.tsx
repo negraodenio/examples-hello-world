@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, FileText, Zap, BarChart3 } from "lucide-react"
+import { Sparkles, FileText, Zap, BarChart3, Edit3 } from "lucide-react"
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
@@ -88,7 +88,7 @@ export default function DashboardPage() {
               <p className="text-muted-foreground mb-4">
                 Create professional multi-page newspapers with AI-powered journalism and editorial quality control.
               </p>
-              <Button onClick={() => (window.location.href = "/dashboard/newspapers")} variant="outline">
+              <Button variant="outline" onClick={() => (window.location.href = "/dashboard/newspapers")}>
                 Create Newspaper
               </Button>
             </div>
@@ -109,11 +109,20 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="p-6">
+          <Edit3 className="w-8 h-8 text-purple-600 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Writing Styles</h3>
+          <p className="text-sm text-muted-foreground mb-4">Create and manage journalist personas and writing styles</p>
+          <Button variant="outline" onClick={() => (window.location.href = "/dashboard/styles")}>
+            Manage Styles
+          </Button>
+        </Card>
+
+        <Card className="p-6">
           <FileText className="w-8 h-8 text-green-600 mb-4" />
           <h3 className="text-lg font-semibold mb-2">News Hunter</h3>
           <p className="text-sm text-muted-foreground mb-4">Discover and rewrite trending news from global sources</p>
-          <Button variant="outline" onClick={() => (window.location.href = "/dashboard")}>
-            Coming Soon
+          <Button variant="outline" onClick={() => (window.location.href = "/dashboard/news")}>
+            Open News Hunter
           </Button>
         </Card>
 

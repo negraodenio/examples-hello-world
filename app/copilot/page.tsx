@@ -10,7 +10,7 @@ export default function CopilotPage() {
   const [user, setUser] = useState<any>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [context, setContext] = useState({
+  const [context] = useState({
     niche: "",
     targetAudience: "",
     articleId: undefined as string | undefined,
@@ -65,34 +65,34 @@ export default function CopilotPage() {
                 Your intelligent copilot for journalism automation and content optimization
               </p>
               <div className="grid grid-cols-2 gap-4 text-left">
-                <div className="border rounded-lg p-4">
+                <div className="border rounded-lg p-4 hover:border-blue-500 transition-colors">
                   <div className="text-2xl mb-2">🔍</div>
                   <h3 className="font-semibold mb-1">NewsHunter</h3>
                   <p className="text-sm text-muted-foreground">Find viral news opportunities</p>
                 </div>
-                <div className="border rounded-lg p-4">
+                <div className="border rounded-lg p-4 hover:border-green-500 transition-colors">
                   <div className="text-2xl mb-2">💰</div>
                   <h3 className="font-semibold mb-1">Revenue Intelligence</h3>
                   <p className="text-sm text-muted-foreground">Maximize content monetization</p>
                 </div>
-                <div className="border rounded-lg p-4">
+                <div className="border rounded-lg p-4 hover:border-orange-500 transition-colors">
                   <div className="text-2xl mb-2">✍️</div>
                   <h3 className="font-semibold mb-1">Style Expert</h3>
                   <p className="text-sm text-muted-foreground">Professional content rewriting</p>
                 </div>
-                <div className="border rounded-lg p-4">
+                <div className="border rounded-lg p-4 hover:border-purple-500 transition-colors">
                   <div className="text-2xl mb-2">🎯</div>
                   <h3 className="font-semibold mb-1">SEO Master</h3>
                   <p className="text-sm text-muted-foreground">Dominate search rankings</p>
                 </div>
               </div>
               <p className="mt-8 text-sm text-muted-foreground">
-                Press <kbd className="px-2 py-1 bg-muted rounded">⌘K</kbd> or create a conversation to get started
+                Press <kbd className="px-2 py-1 bg-muted rounded border">⌘K</kbd> or create a conversation to get
+                started
               </p>
             </div>
           </div>
         )}
-        <AdvancedCopilotWidget context={context} />
       </div>
     </div>
   )

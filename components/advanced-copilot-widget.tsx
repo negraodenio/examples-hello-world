@@ -24,45 +24,33 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
-const AGENT_ICONS: Record<string, string> = {
-  NewsHunter: "🔍",
-  StyleExpert: "✍️",
-  RevenueIntelligence: "💰",
-  SEOMaster: "🎯",
-  ContentLab: "🧪",
-  StrategyArchitect: "📈",
-  general: "🤖",
-}
-
 const QUICK_ACTIONS = [
   {
     id: "analyze-revenue",
     label: "Analyze Revenue",
     icon: DollarSign,
-    prompt:
-      "Analyze the revenue potential of my current content and provide specific optimization strategies with ROI projections",
+    prompt: "Analyze my revenue potential with specific optimization strategies and ROI projections",
     color: "text-green-600",
   },
   {
     id: "find-news",
     label: "Find Viral News",
     icon: Search,
-    prompt: "Search for the latest trending news in my niche with high viral potential and revenue opportunities",
+    prompt: "Search for trending news with high viral potential in AI and technology",
     color: "text-blue-600",
   },
   {
     id: "optimize-seo",
     label: "Optimize SEO",
     icon: Target,
-    prompt:
-      "Perform comprehensive SEO optimization with keyword research, technical improvements, and competitor analysis",
+    prompt: "Perform comprehensive SEO optimization with keyword research and technical improvements",
     color: "text-purple-600",
   },
   {
     id: "rewrite-style",
-    label: "Rewrite Style",
+    label: "Rewrite Content",
     icon: Edit3,
-    prompt: "Rewrite my content in a professional journalist style optimized for engagement and conversions",
+    prompt: "Show me available journalist styles and help me rewrite content professionally",
     color: "text-orange-600",
   },
 ]
@@ -81,11 +69,12 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
   const [showQuickActions, setShowQuickActions] = useState(true)
+  const [initialMessagesLoaded, setInitialMessagesLoaded] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const { messages, input, setInput, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, setInput, handleSubmit, isLoading, error, setMessages } = useChat({
     api: "/api/copilot/advanced-chat",
     body: {
       conversationId,
@@ -106,18 +95,41 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
     if (isOpen) setIsOpen(false)
   })
 
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!conversationId || initialMessagesLoaded) return
+
+      try {
+        const response = await fetch(`/api/copilot/conversations/${conversationId}/messages`)
+        if (response.ok) {
+          const dbMessages = await response.json()
+          if (dbMessages.length > 0) {
+            setMessages(
+              dbMessages.map((msg: any) => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                createdAt: new Date(msg.created_at),
+              })),
+            )
+            setShowQuickActions(false)
+          }
+        }
+      } catch (err) {
+        console.error("[v0] Failed to load messages:", err)
+      } finally {
+        setInitialMessagesLoaded(true)
+      }
+    }
+
+    loadMessages()
+  }, [conversationId, setMessages, initialMessagesLoaded])
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [])
 
-  useEffect(scrollToBottom, [messages])
-
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      const welcomeMessage = generateWelcomeMessage(context)
-      // Messages will be populated by the first interaction
-    }
-  }, [isOpen, context])
+  useEffect(scrollToBottom, [messages, scrollToBottom])
 
   const generateWelcomeMessage = (ctx: typeof context): string => {
     if (ctx.articleId) {
@@ -149,7 +161,7 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
 
   const provideFeedback = (messageId: string, isPositive: boolean) => {
     toast.success(`Thank you for your ${isPositive ? "positive" : ""} feedback!`)
-    console.log(`Feedback for ${messageId}: ${isPositive ? "positive" : "negative"}`)
+    console.log(`[v0] Feedback for ${messageId}: ${isPositive ? "positive" : "negative"}`)
   }
 
   return (
@@ -203,13 +215,16 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
               {/* Messages area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
+                  <div className="text-center py-8 text-muted-foreground text-sm whitespace-pre-line">
                     {generateWelcomeMessage(context)}
                   </div>
                 )}
 
                 {messages.map((message, index) => (
-                  <div key={index} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+                  <div
+                    key={message.id || index}
+                    className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
+                  >
                     <div
                       className={cn(
                         "max-w-[85%] rounded-2xl p-3 text-sm",
@@ -217,17 +232,19 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
                       )}
                     >
                       {/* Tool calls indicator */}
-                      {message.role === "assistant" && message.toolInvocations && (
-                        <div className="flex items-center space-x-1 mb-2 text-xs opacity-75">
-                          <Sparkles className="w-3 h-3" />
-                          <span>Using tools: {message.toolInvocations.map((t: any) => t.toolName).join(", ")}</span>
-                        </div>
-                      )}
+                      {message.role === "assistant" &&
+                        message.toolInvocations &&
+                        message.toolInvocations.length > 0 && (
+                          <div className="flex items-center space-x-1 mb-2 text-xs opacity-75">
+                            <Sparkles className="w-3 h-3" />
+                            <span>Using tools: {message.toolInvocations.map((t: any) => t.toolName).join(", ")}</span>
+                          </div>
+                        )}
 
                       <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
 
                       {/* Message actions for assistant */}
-                      {message.role === "assistant" && (
+                      {message.role === "assistant" && message.content && (
                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
                           <Button
                             variant="ghost"
@@ -242,7 +259,7 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => provideFeedback(String(index), true)}
+                              onClick={() => provideFeedback(message.id || String(index), true)}
                               className="h-6 w-6"
                             >
                               <ThumbsUp className="w-3 h-3" />
@@ -250,7 +267,7 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => provideFeedback(String(index), false)}
+                              onClick={() => provideFeedback(message.id || String(index), false)}
                               className="h-6 w-6"
                             >
                               <ThumbsDown className="w-3 h-3" />
