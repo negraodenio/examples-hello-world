@@ -102,11 +102,12 @@ interface AdvancedCopilotWidgetProps {
     niche?: string
     targetAudience?: string
     currentContent?: string
+    initialPrompt?: string // Added to support pre-filled prompts
   }
 }
 
 export function AdvancedCopilotWidget({ conversationId, context = {} }: AdvancedCopilotWidgetProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(!!conversationId) // Widget should be open by default when there's a conversationId
   const [isExpanded, setIsExpanded] = useState(true)
   const [showQuickActions, setShowQuickActions] = useState(true)
   const [initialMessagesLoaded, setInitialMessagesLoaded] = useState(false)
@@ -221,6 +222,26 @@ export function AdvancedCopilotWidget({ conversationId, context = {} }: Advanced
       console.error("Failed to send feedback", err)
     }
   }
+
+  useEffect(() => {
+    if (context.initialPrompt && input === "") {
+      setInput(context.initialPrompt)
+      setShowQuickActions(false)
+      // Auto-submit after a short delay
+      setTimeout(() => {
+        const form = inputRef.current?.form
+        if (form) {
+          form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+        }
+      }, 500)
+    }
+  }, [context.initialPrompt, input, setInput])
+
+  useEffect(() => {
+    if (conversationId && !isOpen) {
+      setIsOpen(true)
+    }
+  }, [conversationId, isOpen])
 
   return (
     <>
