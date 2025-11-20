@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "functions": {
     "app/api/copilot/advanced-chat/route.ts": {
       "maxDuration": 60,
@@ -18,7 +17,6 @@
       "memory": 2048
     }
   },
-  "regions": ["gru1", "iad1", "lhr1", "nrt1", "syd1", "fra1"],
   "headers": [
     {
       "source": "/api/(.*)",
