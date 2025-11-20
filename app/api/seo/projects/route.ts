@@ -11,19 +11,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data: profile } = await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).single()
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 })
-  }
-
   const { data: projects, error } = await supabase
     .from("seo_projects")
     .select("*")
-    .eq("user_id", profile.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
 
   if (error) {
+    console.error("[v0] Error fetching SEO projects:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -40,19 +35,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data: profile } = await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).single()
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 })
-  }
-
   const body = await request.json()
   const { name, domain, description, industry, target_audience, brand_tone, primary_language, project_type } = body
 
   const { data: project, error } = await supabase
     .from("seo_projects")
     .insert({
-      user_id: profile.id,
+      user_id: user.id,
       name,
       domain,
       description,
@@ -66,6 +55,7 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
+    console.error("[v0] Error creating SEO project:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

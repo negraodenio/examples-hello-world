@@ -40,60 +40,83 @@ export default function IntegrationsPage() {
 
   const fetchConnections = async () => {
     try {
+      console.log("[v0] Fetching connections...")
       const { data, error } = await supabase
         .from("platform_connections")
         .select("*")
         .order("created_at", { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error fetching connections:", error)
+        throw error
+      }
+      console.log("[v0] Connections fetched:", data)
       setConnections(data || [])
     } catch (error) {
-      console.error("Error fetching connections:", error)
+      console.error("[v0] Error in fetchConnections:", error)
     } finally {
       setLoading(false)
     }
   }
 
   const handleConnect = async (platform: string) => {
+    console.log("[v0] Attempting to connect to:", platform)
     setConnecting(platform)
-    // Simulate connection delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
 
     try {
-      // In a real app, this would redirect to OAuth or open a modal for API keys
-      // For this demo, we'll just create a mock connection
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !userData.user) {
+        console.error("[v0] User not authenticated:", userError)
+        throw new Error("You must be logged in to connect platforms")
+      }
+
+      console.log("[v0] User ID:", userData.user.id)
+
+      // Simulate connection delay for UX
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
       const { data, error } = await supabase
         .from("platform_connections")
         .insert({
           platform,
           connection_name: `${platform.charAt(0).toUpperCase() + platform.slice(1)} Account`,
-          credentials: { token: "mock_token_123" },
-          user_id: (await supabase.auth.getUser()).data.user?.id, // This will be handled by RLS in real scenario but good to be explicit if needed, though RLS usually uses auth.uid()
+          credentials: { token: "demo_token_" + Date.now(), connected_at: new Date().toISOString() },
+          user_id: userData.user.id,
         })
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error inserting connection:", error)
+        throw error
+      }
 
+      console.log("[v0] Connection created:", data)
       setConnections([data, ...connections])
       toast.success(`Connected to ${platform} successfully!`)
-    } catch (error) {
-      toast.error("Failed to connect. Please try again.")
-      console.error(error)
+    } catch (error: any) {
+      console.error("[v0] Connection error:", error)
+      toast.error(error.message || "Failed to connect. Please try again.")
     } finally {
       setConnecting(null)
     }
   }
 
   const handleDisconnect = async (id: string) => {
+    console.log("[v0] Disconnecting:", id)
     try {
       const { error } = await supabase.from("platform_connections").delete().eq("id", id)
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Disconnect error:", error)
+        throw error
+      }
 
       setConnections(connections.filter((c) => c.id !== id))
       toast.success("Disconnected successfully")
     } catch (error) {
+      console.error("[v0] Disconnect failed:", error)
       toast.error("Failed to disconnect")
     }
   }
